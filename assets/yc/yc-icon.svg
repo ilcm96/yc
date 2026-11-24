@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#1e3a8a"/></linearGradient><filter id="s" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000" flood-opacity="0.28"/></filter></defs><rect x="100" y="100" width="824" height="824" rx="185" fill="url(#g)" filter="url(#s)"/><g transform="translate(256.56 375.76533333333333) scale(4.257333333333333)"><path d="M6 6 28 33M50 6 28 33V58M108.7 12.1A26 26 0 1 0 108.7 51.9" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><defs>
+<clipPath id="tile"><rect x="8" y="8" width="84" height="84" rx="18.859223300970875"/></clipPath>
+<linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<filter id="aurora" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+<filter id="lift" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.2" flood-color="#000" flood-opacity=".45"/></filter>
+<filter id="drop" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.4" flood-color="#000" flood-opacity=".3"/></filter>
+</defs><g transform="translate(21.524 21.524) scale(9.80952)"><g filter="url(#drop)"><rect x="8" y="8" width="84" height="84" rx="18.859223300970875" fill="#060608"/></g>
+<g clip-path="url(#tile)"><g filter="url(#aurora)"><circle cx="26" cy="92" r="30" fill="#4f46e5"/><circle cx="72" cy="88" r="26" fill="#c026d3" fill-opacity=".85"/><circle cx="54" cy="104" r="20" fill="#06b6d4"/></g></g>
+<rect x="8" y="8" width="84" height="84" rx="18.859223300970875" fill="url(#sheen)"/>
+<rect x="8.4" y="8.4" width="83.2" height="83.2" rx="18.459223300970876" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width=".8"/>
+<g fill="#fff" filter="url(#lift)"><path transform="translate(31.190 71) scale(0.06000 -0.06000)" d="M260 192 20 700H168L333 339H295L459 700H607L367 192ZM241 349H386V0H241Z"/></g></g></svg>
