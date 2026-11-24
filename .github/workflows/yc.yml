@@ -286,6 +286,14 @@ jobs:
       - name: Use the public T3 Connect config
         run: cp .env.example .env
 
+      # Build-time OTLP or PostHog values would bake telemetry into the bundle.
+      - name: Keep telemetry out of the build
+        run: |
+          if grep -nE '^[[:space:]]*[A-Z0-9_]*(OTLP|POSTHOG)[A-Z0-9_]*=' .env; then
+            echo "::error::.env carries telemetry config; remove it before building"
+            exit 1
+          fi
+
       - name: Align package versions
         run: node scripts/update-release-package-versions.ts "${{ steps.version.outputs.version }}"
 

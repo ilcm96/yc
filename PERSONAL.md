@@ -65,6 +65,12 @@
 - staged `package.json`에 최상위 `productName`을 넣지 않습니다. Electron이 `name`(`t3code`) 대신 그 값을 써서 Keychain 항목 "t3code Safe Storage"가 바뀌기 때문입니다.
 - `scripts/export-brand-icons.ts`를 실행하면 `assets/yc/yc-macos-1024.png`를 upstream Icon Composer 결과로 덮어쓰므로 실행하지 않습니다.
 
+### 텔레메트리 차단
+
+- 동작: 서버의 제품 분석 이벤트(PostHog, `ingest.t3.codes`)를 `T3CODE_TELEMETRY_ENABLED` 값과 관계없이 보내지 않습니다. 호출부는 upstream 그대로 두고 주입하는 레이어만 no-op으로 바꿉니다. 빌드 때 OTLP나 PostHog 값이 번들에 들어가면 CI가 실패합니다.
+- 파일: `apps/server/src/telemetry/DisabledAnalytics.ts`, `server.ts`의 `DisabledAnalytics.layer` 연결, `yc.yml`의 "Keep telemetry out of the build" 단계
+- 동기화 확인: `git grep -n 'AnalyticsService.layer' -- apps/server/src ':!*.test.ts'` 결과가 비어 있어야 합니다. upstream이 `AnalyticsService`에 메서드를 추가하면 typecheck가 실패하므로 no-op에도 같은 메서드를 추가합니다. `telemetry/`나 `observability/`에 새 외부 전송 경로가 생겼는지도 확인합니다.
+
 ## 커밋 메시지
 
 - 제목은 conventional commit 형식(`type(scope): 요약`)을 따르고, 요약과 본문은 한국어로 씁니다. upstream 동기화의 merge commit은 Git 기본 메시지를 그대로 둡니다.
