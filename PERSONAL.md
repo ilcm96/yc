@@ -50,9 +50,10 @@
 
 ### Context ring
 
-- 동작: 전송 버튼 옆에 컨텍스트 사용량을 링으로 보여 주며, compaction limit이 설정되어 있으면 그 값을 기준으로 삼습니다.
-- 파일: `chat/ContextWindowRing.tsx`, `ChatView.tsx`, `ChatComposer.tsx`, `ComposerFooterControls.tsx`를 거치는 `contextWindow` prop
-- 테스트: `chat/ContextWindowRing.browser.test.tsx`
+- 동작: 전송 버튼 옆에 컨텍스트 사용량을 회색 링으로 보여 주며, compaction limit이 설정되어 있으면 그 값을 기준으로 삼습니다. 마우스를 올리면 예전 upstream 미터 모양의 팝오버에 사용률과 토큰 수, 진행 막대, 프롬프트 캐시 만료(Claude), 세션 비용, Thread details와 같은 플랜 한도를 보여 줍니다.
+- 세션 비용: Claude SDK 결과의 `total_cost_usd`(세션 누적 추정치)를 Claude adapter가 provider thread별로 기억해 사용량 보고마다 `tokenUsage.cost`로 보냅니다. Codex는 비용을 보내지 않으므로 표시하지 않습니다.
+- 파일: `chat/ContextWindowRing.tsx`, `ChatView.tsx`, `ChatComposer.tsx`, `ComposerFooterControls.tsx`를 거치는 `contextRing` prop(사용량, `promptCacheExpiresAt`, 플랜 한도 입력), `ClaudeAdapterV2.ts`의 `sessionCostUsd`, contracts `orchestrationV2.ts`의 `OrchestrationV2ProviderTurnTokenUsage.cost`, client-runtime `contextWindow.ts`의 live usage `cost`
+- 테스트: `chat/ContextWindowRing.browser.test.tsx`, `ClaudeAdapterV2.test.ts`의 "carries the session's running cost", web `lib/contextWindow.test.ts`의 live usage 케이스
 
 ### YC 브랜딩
 

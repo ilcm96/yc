@@ -3760,7 +3760,22 @@ export default function ChatView(props: ChatViewProps) {
                                     ? EMPTY_COMPOSER_BANNER_ITEMS
                                     : composerBannerItems
                                 }
-                                contextWindow={activeContextWindow}
+                                contextRing={
+                                  activeContextWindow
+                                    ? {
+                                        usage: activeContextWindow,
+                                        promptCacheExpiresAt:
+                                          activeThreadLiveTokenUsage?.promptCacheExpiresAt ?? null,
+                                        limits: {
+                                          providerInstanceId: activeProviderInstanceId,
+                                          providers: providerStatuses,
+                                          sources:
+                                            serverConfig?.usageLimitSources ??
+                                            EMPTY_USAGE_LIMIT_SOURCES,
+                                        },
+                                      }
+                                    : null
+                                }
                                 resumeCompactionTokens={resumeCompactionTokens}
                                 keepFullHistory={keepFullHistory}
                                 onToggleKeepFullHistory={toggleKeepFullHistoryStable}

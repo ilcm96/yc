@@ -76,9 +76,20 @@ function claudeThreadUsing(contextUsage: OrchestrationV2ProviderThread["contextU
   return { ...thread, providerThreads: [providerThread] };
 }
 
-it("shows the thread's context usage as a ring beside the composer's send button", async () => {
-  const thread = claudeThreadUsing({ usedTokens: 250_000, maxTokens: 1_000_000 });
-  using _environment = installFakeEnvironment([thread], { providers: [CLAUDE_PROVIDER] });
+it("shows context, cost, and plan limits from a ring beside the send button", async () => {
+  const thread = claudeThreadUsing({
+    usedTokens: 250_000,
+    maxTokens: 1_000_000,
+    cost: { amount: 3.18, currency: "USD" },
+  });
+  const provider = {
+    ...CLAUDE_PROVIDER,
+    usageLimits: {
+      checkedAt: "2026-03-17T19:12:28.000Z",
+      windows: [{ id: "five-hour", kind: "session", label: "5-hour", usedPercent: 15 }],
+    },
+  };
+  using _environment = installFakeEnvironment([thread], { providers: [provider] });
   __setClientSettingsForTests({
     ...DEFAULT_CLIENT_SETTINGS,
     onboardingCompletedAt: "2026-01-01T00:00:00.000Z",
@@ -93,7 +104,9 @@ it("shows the thread's context usage as a ring beside the composer's send button
   await expect.element(ring).toBeVisible();
   await ring.hover();
 
-  await expect.element(page.getByText("250,000 of 1,000,000 tokens")).toBeVisible();
+  await expect.element(page.getByText("25% · 250k/1m")).toBeVisible();
+  await expect.element(page.getByText("$3.18")).toBeVisible();
+  await expect.element(page.getByText("85% left")).toBeVisible();
 });
 
 it("scales the ring to a compaction limit set below the model's window", async () => {
@@ -117,5 +130,5 @@ it("scales the ring to a compaction limit set below the model's window", async (
   await expect.element(ring).toBeVisible();
   await ring.hover();
 
-  await expect.element(page.getByText("117,000 of 467,000 tokens")).toBeVisible();
+  await expect.element(page.getByText("25% · 117k/467k")).toBeVisible();
 });
