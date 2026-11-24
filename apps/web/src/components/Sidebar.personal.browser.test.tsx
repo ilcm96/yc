@@ -110,3 +110,22 @@ it("drags a project folder into a saved manual order", async () => {
   expect(getClientSettings().sidebarProjectSortOrder).toBe("manual");
   await expect.element(lower).toHaveAttribute("aria-expanded", "true");
 });
+
+it("drags a project in the picker into a saved manual order", async () => {
+  await using _app = await renderApp(false);
+  await page.getByLabelText("Filter threads by project").click();
+  const render = page.getByRole("option", { name: "render" });
+  const beta = page.getByRole("option", { name: "beta" });
+  await expect.element(render).toBeVisible();
+  await expect.element(beta).toBeVisible();
+  const [upper, lower] =
+    top(render.element()) < top(beta.element()) ? [render, beta] : [beta, render];
+  const handle = lower.element().querySelector('[data-testid="project-scope-drag-handle"]')!;
+
+  await drag(handle, upper.element());
+
+  await vi.waitFor(() => expect(top(lower.element())).toBeLessThan(top(upper.element())));
+  expect(getClientSettings().sidebarProjectSortOrder).toBe("manual");
+  // A drag is not a pick, so the picker stays open on every project.
+  await expect.element(upper).toBeVisible();
+});
