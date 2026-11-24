@@ -3,12 +3,16 @@ import { ProjectId } from "@t3tools/contracts";
 import { DEFAULT_CLIENT_SETTINGS } from "@t3tools/contracts/settings";
 import type * as Context from "effect/Context";
 import { expect, it, vi } from "vite-plus/test";
-import { page } from "vite-plus/test/browser";
+import { page, userEvent } from "vite-plus/test/browser";
 
 import { AppRoot } from "~/AppRoot";
 // The thread route loads ChatView lazily; its first transform would eat the test's timeout.
 import "~/components/ChatView";
-import { __setClientSettingsForTests, getClientSettings } from "~/hooks/useSettings";
+import {
+  __setClientSettingsForTests,
+  getClientSettings,
+  updateClientSettings,
+} from "~/hooks/useSettings";
 import { getRouter } from "~/router";
 import {
   ENVIRONMENT_ID,
@@ -94,6 +98,28 @@ async function drag(source: Element, target: Element) {
 }
 
 const top = (element: Element) => element.getBoundingClientRect().top;
+
+it("reveals a long project folder a configured page at a time until it closes", async () => {
+  await using _app = await renderApp(true);
+  await act(() => updateClientSettings({ boringSidebarFolderThreadLimit: 3 }));
+  const folder = page.getByRole("button", { name: /^render/ });
+  await expect.element(folder).toBeVisible();
+  const rows = page.getByTestId("sidebar-row-folder").filter({ hasText: "Thread long-" });
+  await expect.poll(() => rows.elements().length).toBeLessThanOrEqual(4);
+  const shown = rows.elements().length;
+  expect(shown).toBeGreaterThanOrEqual(3);
+
+  // The shift guard drops pointer presses on rows that just moved; keys pass.
+  page.getByRole("button", { name: "Show 3 more" }).element().focus();
+  await userEvent.keyboard("{Enter}");
+
+  await expect.poll(() => rows.elements().length).toBeGreaterThanOrEqual(6);
+  folder.element().focus();
+  await userEvent.keyboard("{Enter}");
+  await expect.element(folder).toHaveAttribute("aria-expanded", "false");
+  await userEvent.keyboard("{Enter}");
+  await expect.poll(() => rows.elements().length).toBe(shown);
+});
 
 it("drags a project folder into a saved manual order", async () => {
   await using _app = await renderApp(true);

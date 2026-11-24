@@ -502,6 +502,13 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: [msg("beta boring sidebar folder rows multiline branch pull request details")],
   },
   {
+    id: "boring-sidebar-folder-thread-limit",
+    title: msg("Threads per folder"),
+    to: "/settings/labs",
+    targetId: "boring-sidebar",
+    searchTerms: [msg("beta boring sidebar folder threads show more limit count")],
+  },
+  {
     id: "tool-call-visibility",
     title: msg("Tool calls in chat"),
     to: "/settings/chat",

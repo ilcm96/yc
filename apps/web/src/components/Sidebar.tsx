@@ -277,6 +277,8 @@ import {
 } from "./sidebar/SidebarThreadRow";
 import { SidebarDraftBlock } from "./sidebar/SidebarDraftBlock";
 import { SidebarProjectFolder, sidebarFolderRowId } from "./sidebar/SidebarProjectFolder";
+import { SidebarProjectFolderMore } from "./sidebar/SidebarProjectFolderMore";
+import { limitProjectFolderThreads } from "./sidebar/projectFolderThreadLimit";
 import { ProjectScopeSortableList, SortableProjectScopeItem } from "./sidebar/ProjectScopeSortable";
 import {
   SidebarDragBoundary,
@@ -476,6 +478,12 @@ function useSidebarThreads(input: {
   // Shared with the old per-project sidebar, so folders keep their open state.
   const projectExpandedById = useUiStateStore((store) => store.projectExpandedById);
   const setProjectExpanded = useUiStateStore((store) => store.setProjectExpanded);
+  const folderThreadLimit = useClientSettings(
+    (settings) => settings.boringSidebarFolderThreadLimit,
+  );
+  const [projectFolderPages, setProjectFolderPages] = useState<ReadonlyMap<string, number>>(
+    () => new Map(),
+  );
   const [settledTail, setSettledTail] = useState({
     scopeKey: projectScopeKey,
     count: SETTLED_TAIL_INITIAL_COUNT,
@@ -540,16 +548,23 @@ function useSidebarThreads(input: {
             projectExpandedById,
             sidebarFolderExpansionKeys(folder.group),
           );
+          const limited = limitProjectFolderThreads(folder.threads, {
+            pages: projectFolderPages.get(folder.group.projectKey) ?? 1,
+            keepKey: routeRowThreadKey,
+            keyOf: threadShellKey,
+            limit: folderThreadLimit,
+          });
           return {
             group: folder.group,
             collapsed,
             // A closed folder still shows the open thread, and hints at the rest.
             threads: collapsed
               ? routeThreadOnly(folder.threads, routeRowThreadKey)
-              : folder.threads,
+              : limited.threads,
             hiddenThreads: collapsed
               ? folder.threads.filter((thread) => threadShellKey(thread) !== routeRowThreadKey)
               : EMPTY_THREADS,
+            limit: collapsed ? null : limited,
           };
         });
   const orderedThreads = [
@@ -601,7 +616,17 @@ function useSidebarThreads(input: {
     toggleProjectFolder: (group: SidebarProjectSnapshot) => {
       const keys = sidebarFolderExpansionKeys(group);
       setProjectExpanded(keys, !resolveProjectExpanded(projectExpandedById, keys));
+      setProjectFolderPages((current) => {
+        if (!current.has(group.projectKey)) return current;
+        const next = new Map(current);
+        next.delete(group.projectKey);
+        return next;
+      });
     },
+    showMoreProjectFolderThreads: (group: SidebarProjectSnapshot) =>
+      setProjectFolderPages((current) =>
+        new Map(current).set(group.projectKey, (current.get(group.projectKey) ?? 1) + 1),
+      ),
     renderedSettledThreads,
     visibleSnoozedThreads,
     visibleWorkingThreads,
@@ -1365,6 +1390,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     toggleWorkingShelf,
     projectFolders,
     toggleProjectFolder,
+    showMoreProjectFolderThreads,
     renderedSettledThreads,
     visibleSnoozedThreads,
     visibleWorkingThreads,
@@ -3693,6 +3719,13 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                                     {folder.threads.map((thread) =>
                                       renderThreadRow(thread, "active", rowId),
                                     )}
+                                    {folder.limit !== null ? (
+                                      <SidebarProjectFolderMore
+                                        group={folder.group}
+                                        nextCount={folder.limit.nextCount}
+                                        onShowMore={showMoreProjectFolderThreads}
+                                      />
+                                    ) : null}
                                   </SidebarProjectFolder>
                                 );
                               })}
