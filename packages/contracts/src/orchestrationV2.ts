@@ -239,6 +239,8 @@ export const OrchestrationV2ProviderTurnTokenUsage = Schema.Struct({
   promptCacheTtlMs: Schema.optional(PositiveInt),
   autoCompactThreshold: Schema.optional(PositiveInt),
   promptCacheExpiresAt: Schema.optional(Schema.String),
+  // yc: the provider's running session cost, for the composer's context ring.
+  cost: ThreadTokenUsageSnapshot.fields.cost,
   updatedAt: Schema.String,
 });
 export type OrchestrationV2ProviderTurnTokenUsage =

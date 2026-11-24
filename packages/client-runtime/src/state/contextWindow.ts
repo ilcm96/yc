@@ -183,7 +183,7 @@ export function deriveLatestContextWindowSnapshot(
       durationMs: null,
       compactsAutomatically: true,
       autoCompactThreshold: liveUsage.autoCompactThreshold ?? null,
-      cost: null,
+      cost: liveUsage.cost ?? null,
       updatedAt: liveUsage.updatedAt,
     };
   }

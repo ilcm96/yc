@@ -3467,6 +3467,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
       readonly cache_read_input_tokens: number;
     };
     readonly modelUsage?: SDKResultMessage["modelUsage"];
+    readonly totalCostUsd?: number;
   }) =>
     claudeSdkFrame({
       type: "result",
@@ -3477,7 +3478,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
       num_turns: input.numTurns ?? 1,
       result: input.result,
       stop_reason: "end_turn",
-      total_cost_usd: 0,
+      total_cost_usd: input.totalCostUsd ?? 0,
       usage: input.usage ?? {
         input_tokens: 1,
         output_tokens: 1,
@@ -9950,6 +9951,74 @@ describe("ClaudeAdapterV2 background wake turns", () => {
           : [],
       );
       assert.deepEqual(reportedContext, [2]);
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(
+          IdAllocator.layer,
+          McpProviderSessions.layer,
+          NodeServices.layer,
+          NodeCrypto.layer,
+        ),
+      ),
+    ),
+  );
+
+  it.effect("carries the session's running cost on the next turn's context reports", () =>
+    Effect.gen(function* () {
+      // given a turn whose result reports the session's running cost
+      const harness = yield* makeWakeHarness;
+      const start = (ordinal: number) =>
+        Effect.gen(function* () {
+          yield* harness.runtime.startTurn(
+            makeClaudeTestTurnInput({
+              threadId: harness.threadId,
+              providerThread: harness.providerThread,
+              now: yield* DateTime.now,
+              attemptId: RunAttemptId.make(`attempt-session-cost-${ordinal}`),
+              providerTurnOrdinal: ordinal,
+              text: "Continue.",
+              attachments: [],
+            }),
+          );
+        });
+      const costs = () =>
+        harness.events.flatMap((event) =>
+          event.type === "provider_turn.updated" && event.providerTurn.tokenUsage
+            ? [event.providerTurn.tokenUsage.cost?.amount ?? null]
+            : [],
+        );
+      yield* start(1);
+      yield* Queue.offerAll(harness.sdkMessages, [
+        makeAssistantTextFrame({ uuid: "00000000-0000-4000-8000-000000000670", text: "One." }),
+        makeResultFrame({
+          uuid: "00000000-0000-4000-8000-000000000671",
+          result: "One.",
+          totalCostUsd: 0.42,
+        }),
+      ]);
+      yield* Queue.take(harness.terminalReceipts);
+
+      // when the next turn reports context before its own result
+      yield* start(2);
+      yield* Queue.offer(
+        harness.sdkMessages,
+        makeAssistantTextFrame({ uuid: "00000000-0000-4000-8000-000000000672", text: "Two." }),
+      );
+      yield* Queue.offer(
+        harness.sdkMessages,
+        makeResultFrame({ uuid: "00000000-0000-4000-8000-000000000673", result: "Two." }),
+      );
+      yield* Queue.take(harness.terminalReceipts);
+
+      // then the cost appears once known and stays, and a zeroed result does not clear it
+      assert.deepEqual(costs(), [null, 0.42, 0.42]);
+      const reported = harness.events.findLast(
+        (event) => event.type === "provider_turn.updated" && event.providerTurn.tokenUsage,
+      );
+      assert.deepEqual(
+        reported?.type === "provider_turn.updated" ? reported.providerTurn.tokenUsage?.cost : null,
+        { amount: 0.42, currency: "USD" },
+      );
     }).pipe(
       Effect.provide(
         Layer.mergeAll(

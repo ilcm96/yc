@@ -125,6 +125,7 @@ describe("live provider-turn usage (#8144)", () => {
       inputTokens: 40_000,
       outputTokens: 2_000,
       autoCompactThreshold: 150_000,
+      cost: { amount: 0.42, currency: "USD" },
       updatedAt: "2026-08-27T00:00:00.000Z",
     });
     const snapshot = deriveLatestContextWindowSnapshot([], usage);
@@ -134,6 +135,7 @@ describe("live provider-turn usage (#8144)", () => {
     expect(snapshot?.remainingTokens).toBe(158_000);
     expect(snapshot?.usedPercentage).toBe(21);
     expect(snapshot?.autoCompactThreshold).toBe(150_000);
+    expect(snapshot?.cost).toEqual({ amount: 0.42, currency: "USD" });
     expect(formatContextWindowCompactionMessage(snapshot?.autoCompactThreshold)).toBe(
       "Compacts automatically at about 150,000 tokens.",
     );

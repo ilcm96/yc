@@ -6082,6 +6082,8 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
         // The title T3 last applied to each native session, so a turn renames it only when the
         // thread title changed. A native `/rename` T3 never applied survives later turns.
         const appliedSessionTitles = new Map<string, string>();
+        // yc: the SDK's running total_cost_usd per provider thread, carried on every usage report.
+        const sessionCostUsd = new Map<string, number>();
         const goalCheckedTurns = new Set<string>();
         // Background subagents can finish after root settlement; retain their registry for wake evidence and hydration.
         const sessionSubagentsByTaskId = yield* Ref.make(new Map<string, ActiveClaudeSubagent>());
@@ -6476,6 +6478,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
             if (claudeMessageInputTokens(usage) <= 0) return;
             context.compactionTokens = undefined;
           }
+          const costUsd = sessionCostUsd.get(context.input.providerThread.id);
           yield* emitProviderEvent({
             type: "provider_turn.updated",
             driver: CLAUDE_PROVIDER,
@@ -6494,7 +6497,10 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
               status: "running",
               startedAt: context.startedAt,
               completedAt: null,
-              tokenUsage,
+              tokenUsage:
+                costUsd === undefined
+                  ? tokenUsage
+                  : { ...tokenUsage, cost: { amount: costUsd, currency: "USD" } },
               ...(context.executedModel === undefined ? {} : { model: context.executedModel }),
             },
           });
@@ -12022,8 +12028,19 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
 
           if (message.type === "result") {
             const contextUsage = context.streamUsage?.usage ?? context.compactionTokens;
+            // yc: a zero total comes from a crashed or empty start, not a reset.
+            const costChanged =
+              message.total_cost_usd > 0 &&
+              sessionCostUsd.get(context.input.providerThread.id) !== message.total_cost_usd;
+            if (costChanged) {
+              sessionCostUsd.set(context.input.providerThread.id, message.total_cost_usd);
+            }
             if (resultsReportingNewContextWindow.has(message) && contextUsage !== undefined) {
               yield* emitContextUsage(context, contextUsage);
+            } else if (costChanged) {
+              // A compaction after the last stream frame is the newer context size.
+              const latestUsage = context.compactionTokens ?? context.streamUsage?.usage;
+              if (latestUsage != null) yield* emitContextUsage(context, latestUsage);
             }
             const completedAt = yield* DateTime.now;
             const interrupted = (yield* Ref.get(interruptedTurns)).has(context.providerTurnId);
