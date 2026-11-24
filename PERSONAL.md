@@ -15,8 +15,8 @@
 
 ## CI와 배포
 
-- `.github/workflows/yc.yml`이 PR과 `main` push마다 검사(포맷, lint, knip, 타입, i18n)와 테스트를 GitHub-hosted 러너에서 실행합니다.
-- `main` push에서 검사가 통과하면 macOS arm64 zip을 빌드하고, `scripts/yc/sign-macos-app.sh`로 자체 서명 인증서(Secret `YC_CODESIGN_P12_BASE64`, `YC_CODESIGN_P12_PASSWORD`)로 다시 서명해 Release로 게시합니다.
+- `.github/workflows/yc.yml`이 PR과 `main` push마다 검사(포맷, lint, knip, 타입, i18n)와 테스트를 GitHub-hosted 러너에서 실행합니다. 공개 저장소의 표준 러너(Linux 4 vCPU)가 무료로 쓸 수 있는 최고 사양이므로, 테스트를 server 8개, web 3개, mobile 2개 샤드와 나머지 패키지 작업으로 나눠 병렬로 돌립니다. Chromium과 Electron 다운로드, server의 Vitest 모듈 캐시는 Actions 캐시로 재사용합니다.
+- `main` push에서는 macOS arm64 zip 빌드와 `scripts/yc/sign-macos-app.sh`의 자체 서명 인증서(Secret `YC_CODESIGN_P12_BASE64`, `YC_CODESIGN_P12_PASSWORD`) 재서명을 테스트와 동시에 진행하고, 모든 검사와 테스트가 통과하면 그 파일을 Release로 게시합니다.
   - 버전은 `<upstream 태그>-yc.<run number>`(예: `0.1.11-yc.12`)이고 Release 태그는 그 앞에 `v`를 붙입니다.
   - 내장 업데이터는 `T3CODE_DESKTOP_UPDATE_REPOSITORY=none`으로 끕니다. T3 Connect 공개 설정은 빌드 때 `.env.example`을 `.env`로 복사해 넣습니다.
 - 각 Mac은 `scripts/yc/install-updater.sh`가 설치한 LaunchAgent로 최신 Release를 받습니다.
