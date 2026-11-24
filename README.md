@@ -1,3 +1,6 @@
+> [!NOTE]
+> **yc** is an unofficial personal build based on the T3 Code source code. It is not affiliated with or endorsed by T3 Tools, Inc. The rest of this README is upstream's and describes T3 Code.
+
 <p align="center">
   <a href="https://t3.codes">
     <img src="./assets/prod/t3-black-web-icon-192x192.png" width="80" height="80" alt="T3 Code logo" />
