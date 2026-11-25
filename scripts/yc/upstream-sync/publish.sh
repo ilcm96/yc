@@ -31,8 +31,9 @@ git fetch --quiet --no-tags --filter=blob:none "$UPSTREAM" "+refs/tags/$tag:refs
 [[ $(git rev-parse "$branch^1") == "$main_sha" && $(git rev-parse "$branch^2") == "$tag_sha" ]] ||
   fail "$branch is not a merge of main and $tag"
 
-# The tag goes first: git describe in the release build needs it once the PR lands.
-git -c core.hooksPath=/dev/null push --quiet \
+# The tag goes first: git describe in the release build needs it once the PR lands. The empty
+# extraheader drops the read-only job token that actions/checkout left, so the PAT authenticates.
+git -c core.hooksPath=/dev/null -c http.https://github.com/.extraheader= push --quiet \
   "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" \
   "refs/tags/$tag" "+refs/heads/$branch:refs/heads/$branch"
 
