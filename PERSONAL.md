@@ -92,6 +92,14 @@
 - staged `package.json`에 최상위 `productName`을 넣지 않습니다. Electron이 `name`(`t3code`) 대신 그 값을 써서 Keychain 항목 "t3code Safe Storage"가 바뀌기 때문입니다.
 - `scripts/export-brand-icons.ts`를 실행하면 `assets/yc/yc-macos-1024.png`를 upstream Icon Composer 결과로 덮어쓰므로 실행하지 않습니다.
 
+### 출력 속도 (tok/s)
+
+- 동작: Claude 세션의 출력 토큰 속도를 composer의 context ring 왼쪽, 서브에이전트 행, "N subagents" 묶음 헤더에 보여 줍니다. 실행 중에는 현재 또는 직전 요청의 속도를, 끝나면 `avg`가 붙은 평균을 보여 줍니다. 묶음 헤더는 실행 중인 서브에이전트(모두 끝나면 전체)의 토큰 가중 평균입니다. Codex 등 다른 provider에서는 표시하지 않습니다.
+- 메인 세션: `message_start`부터 `message_delta`까지를 요청 하나로 재고, 스트리밍 중에는 delta 글자 수와 `thinking_tokens` 추정치로 1초마다 추정값을 보냅니다. 글자당 토큰 비율은 직전 요청의 실제 토큰 수로 보정합니다.
+- 서브에이전트: SDK가 서브에이전트의 스트림과 최종 토큰 수를 보내지 않으므로, `task_progress`와 `task_notification`을 받을 때 `~/.claude/projects/<프로젝트>/<세션>/subagents/agent-<task id>.jsonl`에서 새 줄만 읽어 요청별 출력 토큰과 시간을 구합니다. Claude Code가 답변이 끝난 뒤에 줄을 쓰므로 긴 요청 중에는 직전 요청의 속도가 남아 있습니다. transcript 형식이 바뀌면 속도만 사라집니다.
+- 파일: `orchestration-v2/Adapters/claudeOutputSpeed.ts`, `ClaudeAdapterV2.ts`의 연결부(`meterClaudeOutputFrame`, `emitContextUsage`의 `outputSpeed`, `updateClaudeSubagentNode`의 `subagentOutputSpeed.read`), contracts `outputSpeed.ts`와 `orchestrationV2.ts`의 `outputSpeed` 필드 두 개, web `chat/outputSpeed.logic.ts`·`OutputSpeedLabel.tsx`, `ContextWindowRing.tsx`·`V2LifecycleRow.tsx`·`TimelineV2EventRow.tsx`·`ChatView.tsx`의 연결부
+- 테스트: `claudeOutputSpeed.test.ts`, `chat/outputSpeed.logic.test.ts`
+
 ### 텔레메트리 차단
 
 - 동작: 서버의 제품 분석 이벤트(PostHog, `ingest.t3.codes`)를 `T3CODE_TELEMETRY_ENABLED` 값과 관계없이 보내지 않습니다. 호출부는 upstream 그대로 두고 주입하는 레이어만 no-op으로 바꿉니다. 빌드 때 OTLP나 PostHog 값이 번들에 들어가면 CI가 실패합니다.

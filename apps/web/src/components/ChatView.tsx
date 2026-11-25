@@ -348,6 +348,7 @@ import { modelFallbackBannerItem } from "./chat/ComposerUsageLimits";
 import { ComposerSurface } from "./chat/ComposerSurface";
 import { resolveThreadSyncPhase } from "../threadSync";
 import { hasAvailableCompactionProvider } from "./chat/compaction.logic";
+import { displayedOutputSpeed } from "./chat/outputSpeed.logic";
 import {
   deriveLatestContextWindowSnapshot,
   hasDismissedResumeCompaction,
@@ -3766,6 +3767,10 @@ export default function ChatView(props: ChatViewProps) {
                                         usage: activeContextWindow,
                                         promptCacheExpiresAt:
                                           activeThreadLiveTokenUsage?.promptCacheExpiresAt ?? null,
+                                        outputSpeed: displayedOutputSpeed(
+                                          activeThreadLiveTokenUsage?.outputSpeed,
+                                          isWorking,
+                                        ),
                                         limits: {
                                           providerInstanceId: activeProviderInstanceId,
                                           providers: providerStatuses,

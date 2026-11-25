@@ -16,6 +16,8 @@ import { LinkRequestCard } from "./LinkRequestCard";
 import { SecretRequestCard } from "./SecretRequestCard";
 import { TimelineRowCtx, type TimelineRow } from "./timelineRowContext";
 import { subagentGroupTiming } from "./TimelineV2EventRow.logic";
+import { OutputSpeedLabel } from "./OutputSpeedLabel";
+import { subagentGroupOutputSpeed } from "./outputSpeed.logic";
 
 export function V2EventTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "event" }> }) {
   const ctx = use(TimelineRowCtx);
@@ -80,6 +82,7 @@ const V2SubagentGroup = memo(function V2SubagentGroup({
       status: live?.status ?? item.status,
       startedAt: live?.startedAt ?? item.startedAt,
       completedAt: live?.completedAt ?? item.completedAt,
+      outputSpeed: live?.outputSpeed,
     };
   });
   const summary = subagentGroupSummary(agents, m);
@@ -138,6 +141,7 @@ const V2SubagentGroup = memo(function V2SubagentGroup({
               {statusSummary}
             </span>
           </span>
+          <OutputSpeedLabel speed={subagentGroupOutputSpeed(agents)} />
           <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
             <SubagentElapsed agent={subagentGroupTiming(agents)} />
           </span>

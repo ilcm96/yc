@@ -11,6 +11,8 @@ import { Button } from "../ui/button";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { composerFloatingLayerProps } from "./composerEventScope";
 import type { ThreadDetailsUsageInput } from "./ThreadDetailsUsage";
+import { OutputSpeedLabel } from "./OutputSpeedLabel";
+import type { DisplayedOutputSpeed } from "./outputSpeed.logic";
 
 const RADIUS = 9.75;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -19,6 +21,7 @@ export interface ContextRing {
   readonly usage: ContextWindowSnapshot;
   readonly promptCacheExpiresAt: string | null;
   readonly limits: Omit<ThreadDetailsUsageInput, "contextWindow">;
+  readonly outputSpeed: DisplayedOutputSpeed | null;
 }
 
 /** The composer's context gauge, styled after the context meter upstream removed from the footer. */
@@ -26,6 +29,7 @@ export const ContextWindowRing = memo(function ContextWindowRing({
   usage,
   promptCacheExpiresAt,
   limits,
+  outputSpeed,
 }: ContextRing) {
   const gt = useGT();
   const used = contextUsedPercent(usage);
@@ -35,63 +39,66 @@ export const ContextWindowRing = memo(function ContextWindowRing({
       ? gt("Context: {used}% used", { used: used.percent })
       : gt("Context: {usedTokens} tokens used", { usedTokens });
   return (
-    <Popover>
-      <PopoverTrigger
-        openOnHover
-        delay={150}
-        closeDelay={0}
-        render={
-          <Button
-            size="icon-sm"
-            variant="ghost-muted"
-            className="size-7 shrink-0"
-            aria-label={summary}
-            data-testid="context-window-ring"
-          />
-        }
-      >
-        <svg viewBox="0 0 24 24" className="size-5 -rotate-90" aria-hidden>
-          <circle
-            cx="12"
-            cy="12"
-            r={RADIUS}
-            fill="none"
-            strokeWidth="3"
-            className="stroke-muted-foreground/24"
-          />
-          {used !== null ? (
+    <>
+      <OutputSpeedLabel speed={outputSpeed} />
+      <Popover>
+        <PopoverTrigger
+          openOnHover
+          delay={150}
+          closeDelay={0}
+          render={
+            <Button
+              size="icon-sm"
+              variant="ghost-muted"
+              className="size-7 shrink-0"
+              aria-label={summary}
+              data-testid="context-window-ring"
+            />
+          }
+        >
+          <svg viewBox="0 0 24 24" className="size-5 -rotate-90" aria-hidden>
             <circle
               cx="12"
               cy="12"
               r={RADIUS}
               fill="none"
               strokeWidth="3"
-              strokeLinecap="round"
-              strokeDasharray={CIRCUMFERENCE}
-              strokeDashoffset={CIRCUMFERENCE * (1 - used.percent / 100)}
-              className="stroke-muted-foreground/72 transition-[stroke-dashoffset] duration-500 ease-out motion-reduce:transition-none"
+              className="stroke-muted-foreground/24"
             />
-          ) : null}
-        </svg>
-      </PopoverTrigger>
-      <PopoverPopup
-        {...composerFloatingLayerProps}
-        tooltipStyle
-        side="top"
-        align="end"
-        padding="none"
-        width="sm"
-        className="text-left whitespace-normal"
-      >
-        <ContextRingDetails
-          usage={usage}
-          used={used}
-          summary={summary}
-          promptCacheExpiresAt={promptCacheExpiresAt}
-          limits={limits}
-        />
-      </PopoverPopup>
-    </Popover>
+            {used !== null ? (
+              <circle
+                cx="12"
+                cy="12"
+                r={RADIUS}
+                fill="none"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeDasharray={CIRCUMFERENCE}
+                strokeDashoffset={CIRCUMFERENCE * (1 - used.percent / 100)}
+                className="stroke-muted-foreground/72 transition-[stroke-dashoffset] duration-500 ease-out motion-reduce:transition-none"
+              />
+            ) : null}
+          </svg>
+        </PopoverTrigger>
+        <PopoverPopup
+          {...composerFloatingLayerProps}
+          tooltipStyle
+          side="top"
+          align="end"
+          padding="none"
+          width="sm"
+          className="text-left whitespace-normal"
+        >
+          <ContextRingDetails
+            usage={usage}
+            used={used}
+            summary={summary}
+            promptCacheExpiresAt={promptCacheExpiresAt}
+            limits={limits}
+          />
+        </PopoverPopup>
+      </Popover>
+    </>
   );
 });
 
@@ -102,7 +109,7 @@ function ContextRingDetails({
   summary,
   promptCacheExpiresAt,
   limits,
-}: ContextRing & {
+}: Omit<ContextRing, "outputSpeed"> & {
   readonly used: ReturnType<typeof contextUsedPercent>;
   readonly summary: string;
 }) {

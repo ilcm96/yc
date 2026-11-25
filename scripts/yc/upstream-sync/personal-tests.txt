@@ -6,4 +6,6 @@ apps/web/src/components/sidebar/projectFolderThreadLimit.test.ts
 apps/web/src/components/chat/ContextWindowRing.browser.test.tsx
 apps/web/src/lib/contextWindow.test.ts
 apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.test.ts
+apps/server/src/orchestration-v2/Adapters/claudeOutputSpeed.test.ts
+apps/web/src/components/chat/outputSpeed.logic.test.ts
 apps/desktop/src/app/DesktopPreReadyPlatform.test.ts

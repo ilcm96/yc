@@ -7,6 +7,12 @@ import {
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
 import { claudeTaskOutputRoot, tailClaudeTaskOutput } from "./ClaudeTaskOutputTail.ts";
 import {
+  claudeStreamOutputMeter,
+  claudeStreamOutputSpeed,
+  makeClaudeSubagentOutputSpeedReader,
+  meterClaudeOutputFrame,
+} from "./claudeOutputSpeed.ts";
+import {
   dynamicToolTitle,
   formatReadToolLabel,
   formatSearchToolLabel,
@@ -6479,6 +6485,11 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
             context.compactionTokens = undefined;
           }
           const costUsd = sessionCostUsd.get(context.input.providerThread.id);
+          // yc: output speed for the composer.
+          const outputSpeed = claudeStreamOutputSpeed(
+            claudeStreamOutputMeter(context),
+            DateTime.toEpochMillis(now),
+          );
           yield* emitProviderEvent({
             type: "provider_turn.updated",
             driver: CLAUDE_PROVIDER,
@@ -6497,10 +6508,11 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
               status: "running",
               startedAt: context.startedAt,
               completedAt: null,
-              tokenUsage:
-                costUsd === undefined
-                  ? tokenUsage
-                  : { ...tokenUsage, cost: { amount: costUsd, currency: "USD" } },
+              tokenUsage: {
+                ...tokenUsage,
+                ...(costUsd === undefined ? {} : { cost: { amount: costUsd, currency: "USD" } }),
+                ...(outputSpeed === undefined ? {} : { outputSpeed }),
+              },
               ...(context.executedModel === undefined ? {} : { model: context.executedModel }),
             },
           });
@@ -7961,6 +7973,17 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
               : new Map(current).set(nativeThreadId, { ...entry, messages });
           });
 
+        // yc: subagent output speed, also only in its transcript.
+        const configuredClaudeConfigDir = adapterOptions.environment.CLAUDE_CONFIG_DIR?.trim();
+        const subagentOutputSpeed = makeClaudeSubagentOutputSpeedReader({
+          fileSystem,
+          path,
+          configDir:
+            configuredClaudeConfigDir && session.cwd !== null
+              ? path.resolve(session.cwd, configuredClaudeConfigDir)
+              : undefined,
+        });
+
         // Claude Code records the effort a subagent ran at only in its transcript.
         const readSubagentTranscriptEffort = Effect.fnUntraced(function* (
           context: ActiveClaudeTurnContext,
@@ -8140,6 +8163,11 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
                     )
                   : undefined));
           const model = input.model ?? priorTask?.model ?? null;
+          const outputSpeed = yield* subagentOutputSpeed.read({
+            nativeThreadId: input.context.nativeThreadId,
+            taskId: input.taskId,
+            settled: input.status !== "running",
+          });
           const task = {
             ...(priorTask ?? {
               id: nodeId,
@@ -8184,6 +8212,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
               : {}),
             ...(input.progress === undefined ? {} : { progress: input.progress }),
             ...(workflowWithThreads === undefined ? {} : { workflow: workflowWithThreads }),
+            ...(outputSpeed === undefined ? {} : { outputSpeed }),
             ...(input.result === undefined ? {} : { result: input.result }),
             ...(isReopen ? { startedAt: now } : {}),
             completedAt: input.status === "running" ? null : (priorTask?.completedAt ?? now),
@@ -10884,6 +10913,18 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
             return;
           }
           yield* trackClaudeGoal({ nativeThreadId: liveQuery.nativeThreadId, context, message });
+
+          // yc: output speed; a due live estimate rides the request's current usage.
+          if (
+            meterClaudeOutputFrame(
+              claudeStreamOutputMeter(context),
+              message,
+              DateTime.toEpochMillis(yield* DateTime.now),
+            ) &&
+            context.streamUsage?.usage
+          ) {
+            yield* emitContextUsage(context, context.streamUsage.usage);
+          }
 
           if (message.type === "stream_event" && !message.parent_tool_use_id) {
             const event = message.event;

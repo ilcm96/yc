@@ -67,6 +67,8 @@ import { ProviderInstanceIcon, providerTextColor } from "./ProviderInstanceIcon"
 import { cn } from "~/lib/utils";
 import { TimelineSystemDivider } from "./TimelineSystemDivider";
 import { subagentResumedSince } from "./V2LifecycleRow.logic";
+import { OutputSpeedLabel } from "./OutputSpeedLabel";
+import { displayedOutputSpeed } from "./outputSpeed.logic";
 import { Button, InlineButton } from "../ui/button";
 import { T3Wordmark } from "../T3Wordmark";
 
@@ -523,6 +525,9 @@ function SubagentTimelineLink(props: {
           {statusLabel}
         </span>
       ) : null}
+      {props.event ? null : (
+        <OutputSpeedLabel speed={displayedOutputSpeed(agent?.outputSpeed, !settled)} />
+      )}
       <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
         {props.event ? props.event.timestamp : <SubagentElapsed agent={timing} />}
       </span>

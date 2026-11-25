@@ -1,5 +1,6 @@
 import { OrchestrationMessageContext } from "./composerContext.ts";
 import { withRecordIdTable } from "./orchestrationV2IdTable.ts";
+import { OrchestrationV2OutputSpeed } from "./outputSpeed.ts";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -241,6 +242,8 @@ export const OrchestrationV2ProviderTurnTokenUsage = Schema.Struct({
   promptCacheExpiresAt: Schema.optional(Schema.String),
   // yc: the provider's running session cost, for the composer's context ring.
   cost: ThreadTokenUsageSnapshot.fields.cost,
+  // yc: output speed for the composer.
+  outputSpeed: Schema.optional(OrchestrationV2OutputSpeed),
   updatedAt: Schema.String,
 });
 export type OrchestrationV2ProviderTurnTokenUsage =
@@ -996,6 +999,8 @@ export const OrchestrationV2Subagent = Schema.Struct({
   ]),
   progress: Schema.optional(Schema.String),
   workflow: Schema.optional(OrchestrationV2SubagentWorkflow),
+  // yc: output speed for the subagent row.
+  outputSpeed: Schema.optional(OrchestrationV2OutputSpeed),
   result: Schema.NullOr(Schema.String),
   startedAt: Schema.NullOr(Schema.DateTimeUtc),
   completedAt: Schema.NullOr(Schema.DateTimeUtc),
