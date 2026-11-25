@@ -54,6 +54,9 @@ jobs:
       - name: Typecheck
         run: vp run typecheck
 
+      - name: Check yc invariants
+        run: scripts/yc/check-invariants.sh
+
   # Every package except the ones with their own sharded jobs below.
   test:
     name: Test
@@ -244,10 +247,13 @@ jobs:
           path: node_modules/.vitest-cache
           key: vitest-modules-server-${{ matrix.shard }}-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
 
-  # Builds alongside the tests; only `release` waits for them.
+  # Builds alongside the tests; only `release` waits for them. Upstream sync PRs build too, unsigned,
+  # so a merge that breaks the macOS build never reaches main.
   build:
     name: Build macOS
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name != 'pull_request' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && startsWith(github.head_ref, 'bot/upstream-'))
     runs-on: macos-15
     timeout-minutes: 60
     outputs:
@@ -304,7 +310,17 @@ jobs:
           node scripts/build-desktop-artifact.ts --platform mac --target zip --arch arm64
           --build-version "${{ steps.version.outputs.version }}" --output-dir dist-yc --verbose
 
+      # electron-builder writes app-update.yml only with a publish config, and the app turns its
+      # updater on only when the file exists.
+      - name: Keep the built-in updater off
+        run: |
+          if unzip -Z1 "dist-yc/YC-${{ steps.version.outputs.version }}-arm64.zip" | grep -E 'Contents/Resources/app-update\.yml$'; then
+            echo "::error::The build carries an update feed; T3CODE_DESKTOP_UPDATE_REPOSITORY=none no longer disables it"
+            exit 1
+          fi
+
       - name: Sign
+        if: github.event_name != 'pull_request'
         env:
           YC_CODESIGN_P12_BASE64: ${{ secrets.YC_CODESIGN_P12_BASE64 }}
           YC_CODESIGN_P12_PASSWORD: ${{ secrets.YC_CODESIGN_P12_PASSWORD }}
@@ -313,6 +329,7 @@ jobs:
           scripts/yc/sign-macos-app.sh "dist-yc/YC-$version-arm64.zip" "YC-$version-arm64.zip"
 
       - name: Upload signed app
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: yc-macos-arm64
@@ -323,6 +340,7 @@ jobs:
   release:
     name: Release
     needs: [check, test, test-mobile, test-web, test-server, build]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:

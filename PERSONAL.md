@@ -6,19 +6,46 @@
 
 - `upstream`은 `pingdotgg/t3code`이고 `origin`은 이 저장소입니다.
 - stable 태그(`vX.Y.Z`)만 따라갑니다. upstream `main`이나 nightly 태그는 따라가지 않습니다.
-- 태그를 `bot/upstream-vX.Y.Z` 브랜치에 merge하고, 그 PR은 merge commit으로 병합합니다. squash나 rebase를 하면 다음 태그의 merge base가 깨지므로 하지 않습니다.
+- 태그를 `bot/upstream-vX.Y.Z` 브랜치에 merge하고, 그 PR은 merge commit으로 병합합니다. squash나 rebase를 하면 다음 태그의 merge base가 깨지므로 저장소 설정에서 두 방식을 꺼 두었습니다.
 - 충돌은 upstream의 새 구조를 유지하고 그 위에 개인 기능을 다시 얹는 방식으로 해결합니다. 한쪽을 통째로 고르지 않습니다.
-- 개인 기능이 연결되어야 하는 경우를 제외하고 upstream 소유 파일(`AGENTS.md`, `.agents/skills/*`, upstream 워크플로)은 수정하지 않습니다. 필요 없는 워크플로는 삭제하지 말고 비활성화합니다.
-- 동기화가 인증이나 T3 Connect, 데스크톱 서명이나 업데이트, `.github/**`, DB 마이그레이션을 건드리거나, 개인 기능을 다시 연결하는 수준이 아니라 새로 만들어야 하면 병합하지 말고 사람의 리뷰를 요청합니다.
+- 개인 기능이 연결되어야 하는 경우를 제외하고 upstream 소유 파일(`AGENTS.md`, `.agents/skills/*`, upstream 워크플로)은 수정하지 않습니다. 필요 없는 워크플로는 삭제하지 말고 비활성화합니다. 켜 두는 워크플로는 `yc.yml`과 `yc-upstream-sync.yml`입니다.
 - 병합한 upstream 태그는 origin에도 push합니다. 릴리스 버전이 `git describe`로 그 태그를 찾기 때문입니다.
-- upstream에서 새 워크플로가 들어오면 `gh workflow disable`로 끕니다. 켜 두는 워크플로는 `.github/workflows/yc.yml` 하나입니다.
+
+### 자동 동기화
+
+- `.github/workflows/yc-upstream-sync.yml`이 매일 04:00 KST에 새 stable 태그를 찾아 위 절차를 수행합니다. 수동 실행에서는 태그를 지정할 수 있고, `force`를 켜면 닫힌 PR이 있는 태그도 다시 동기화합니다. 스크립트는 `scripts/yc/upstream-sync/`에 있습니다.
+  - Resolve: 태그를 merge하고 `verify.sh`(i18n, typecheck, `scripts/yc/check-invariants.sh`, `personal-tests.txt`의 개인 기능 테스트)로 검증합니다. 충돌이 있거나 검증이 실패할 때만 Claude 해결 세션(`resolve-prompt.md`, 70분)을 한 번 실행하고, Git 기본 메시지로 merge commit을 만듭니다.
+  - Review: 모든 동기화에서 Claude 리뷰 세션(`review-prompt.md`, 40분)이 동기화 전후의 yc 패치와 겹치는 파일의 upstream 변경을 읽고, PERSONAL.md의 개인 기능마다 진입점부터 연결이 살아 있는지 점검합니다. 테스트는 컴포넌트를 단독으로 검사하므로, upstream이 기능을 닿을 수 없게 만든 경우를 이 단계가 잡습니다.
+  - 두 세션 모두 `--model opus`로 최신 Opus를 쓰고, 서브에이전트(Agent)를 허용해 병렬로 조사합니다. 단계·모델별 토큰 수와 API 정가로 환산한 비용은 PR 본문과 Actions 실행 요약에 남깁니다.
+  - Publish: upstream 태그와 sync 브랜치를 push하고 PR을 엽니다. push 토큰은 저장소 코드를 실행하지 않는 이 job만 가집니다.
+  - Merge: PR에서 YC가 head commit 기준으로 통과하고 라벨이 `sync:auto-merge`이면 merge commit으로 병합하고, 브랜치를 지우고, upstream 워크플로를 끕니다. sync PR에서는 macOS 빌드도 서명 없이 돌립니다.
+- 다음 경우에는 `sync:needs-review` 라벨을 붙이고 자동으로 병합하지 않습니다.
+  - 검증이 실패했거나 충돌 표시가 남은 경우
+  - Claude 해결 세션이 오류나 시간 초과로 끝났거나, 보고 파일이 없거나, 스스로 리뷰가 필요하다고 보고한 경우(개인 기능을 새로 만들어야 했거나, 해결이 확실하지 않거나, 개인 기능 테스트를 고친 경우)
+  - Claude 리뷰에서 개인 기능이 의심이나 깨짐으로 나왔거나, 빠진 기능이 있거나, 리뷰가 오류나 시간 초과로 끝난 경우
+  - 충돌 해결이나 Claude의 수정이 민감 경로(인증, T3 Connect·relay, 텔레메트리·관측, 데스크톱 업데이트, DB 마이그레이션, `server.ts`, `.github/`, `scripts/yc/`, `build-desktop-artifact.ts`, `.env.example`)에 닿은 경우. upstream이 직접 바꾼 민감 경로는 그대로 통과합니다. 목록은 `resolve.sh`의 `SENSITIVE`입니다.
+  - Claude가 `personal-tests.txt`의 테스트나 `PERSONAL.md`, `AGENTS.md`를 수정한 경우
+  - upstream이 `apps/server/src/telemetry`나 `observability`에 테스트가 아닌 새 파일을 추가한 경우
+- 리뷰 PR은 로컬에서 브랜치를 받아 고친 뒤 push하고, 직접 merge commit으로 병합합니다. 그 태그를 건너뛰려면 PR을 닫습니다.
+- 알림은 Discord webhook(`notify.sh`)으로 보냅니다. owner 토큰으로 만든 PR은 GitHub 알림을 보내지 않기 때문입니다.
+  - 리뷰 PR 생성: 사유, 충돌 파일 수, Claude API 환산 비용과 PR 링크를 한 번 보냅니다. 열려 있는 동안 다음 동기화는 조용히 건너뜁니다.
+  - 자동 병합: PR 링크와 Claude 비용을 보냅니다.
+  - sync PR의 CI 실패나 sync job 실패: 실행 링크를 보냅니다. CI를 재실행해 통과하면 auto-merge PR은 그대로 병합됩니다.
+  - Discord 전송이 실패하면 job이 실패하므로 GitHub 실패 메일이 대신 옵니다.
+- 비밀값은 배포 브랜치를 `main`으로 제한한 `yc-sync` environment에 둡니다. 그래서 PR 브랜치에서 실행되는 워크플로는 읽을 수 없습니다.
+  - `CLAUDE_CODE_OAUTH_TOKEN`: `claude setup-token`으로 받은 1년짜리 토큰입니다. Claude 사용량은 구독 한도에서 나갑니다. 한도 초과나 토큰 만료로 Claude가 아무것도 바꾸지 못하면 push 없이 실패하고 다음 날 다시 시도합니다.
+  - `YC_SYNC_TOKEN`: 이 저장소만 대상으로 하는 fine-grained PAT(Contents, Pull requests, Workflows 쓰기)입니다. `GITHUB_TOKEN`으로 만든 PR이나 push는 YC를 실행하지 않고, 워크플로 파일 변경을 push하지도 못합니다.
+  - `DISCORD_WEBHOOK_URL`: 알림을 받을 Discord 채널의 webhook입니다.
+  - 만료되면 sync 실행이 실패합니다. 새로 발급해 `gh secret set <이름> --env yc-sync`로 교체합니다.
+- 공개 저장소의 schedule은 60일 동안 저장소 활동이 없으면 꺼집니다. 꺼졌으면 Actions 화면에서 다시 켭니다.
+- Claude Code CLI는 매번 최신 버전을 설치하므로 `opus` 별칭이 항상 최신 Opus를 가리킵니다. 실제로 쓴 모델은 사용량 표에 남습니다. CLI 옵션이나 결과 형식이 바뀌면 push 없이 실패하거나 리뷰로 넘어가므로 자동 병합되지는 않습니다.
 
 ## CI와 배포
 
-- `.github/workflows/yc.yml`이 PR과 `main` push마다 검사(포맷, lint, knip, 타입, i18n)와 테스트를 GitHub-hosted 러너에서 실행합니다. 공개 저장소의 표준 러너(Linux 4 vCPU)가 무료로 쓸 수 있는 최고 사양이므로, 테스트를 server 8개, web 3개, mobile 2개 샤드와 나머지 패키지 작업으로 나눠 병렬로 돌립니다. Chromium과 Electron 다운로드, server의 Vitest 모듈 캐시는 Actions 캐시로 재사용합니다.
+- `.github/workflows/yc.yml`이 PR과 `main` push마다 검사(포맷, lint, knip, 타입, i18n)와 테스트를 GitHub-hosted 러너에서 실행합니다. 공개 저장소의 표준 러너(Linux 4 vCPU)가 무료로 쓸 수 있는 최고 사양이므로, 테스트를 server 8개, web 3개, mobile 2개 샤드와 나머지 패키지 작업으로 나눠 병렬로 돌립니다. Chromium과 Electron 다운로드, server의 Vitest 모듈 캐시는 Actions 캐시로 재사용합니다. check 작업은 `scripts/yc/check-invariants.sh`로 텔레메트리 차단 연결도 확인합니다.
 - `main` push에서는 macOS arm64 zip 빌드와 `scripts/yc/sign-macos-app.sh`의 자체 서명 인증서(Secret `YC_CODESIGN_P12_BASE64`, `YC_CODESIGN_P12_PASSWORD`) 재서명을 테스트와 동시에 진행하고, 모든 검사와 테스트가 통과하면 그 파일을 Release로 게시합니다.
   - 버전은 `<upstream 태그>-yc.<run number>`(예: `0.1.11-yc.12`)이고 Release 태그는 그 앞에 `v`를 붙입니다.
-  - 내장 업데이터는 `T3CODE_DESKTOP_UPDATE_REPOSITORY=none`으로 끕니다. T3 Connect 공개 설정은 빌드 때 `.env.example`을 `.env`로 복사해 넣습니다.
+  - 내장 업데이터는 `T3CODE_DESKTOP_UPDATE_REPOSITORY=none`으로 끕니다. 빌드 결과에 `app-update.yml`이 들어 있으면 빌드가 실패합니다. 앱은 이 파일이 있을 때만 업데이터를 켭니다. T3 Connect 공개 설정은 빌드 때 `.env.example`을 `.env`로 복사해 넣습니다.
 - 각 Mac은 `scripts/yc/install-updater.sh`가 설치한 LaunchAgent로 최신 Release를 받습니다.
   - 설치: `curl -fsSL https://raw.githubusercontent.com/ilcm96/yc/main/scripts/yc/install-updater.sh | bash`. 같은 bundle id를 쓰는 공식 앱이 `/Applications`에 있으면 먼저 지워야 설치됩니다. `~/.t3`의 데이터는 그대로 씁니다.
   - 제거: 같은 스크립트에 `--uninstall`을 붙입니다. `YC.app`은 남습니다.
@@ -29,7 +56,7 @@
 
 ## 유지할 개인 기능
 
-각 기능은 별도 파일에 두고, upstream 파일에는 최소한의 줄만 추가해 연결합니다. 동기화할 때마다 아래 테스트를 변경 파일 주변만이 아니라 전부 실행해 통과시킵니다.
+각 기능은 별도 파일에 두고, upstream 파일에는 최소한의 줄만 추가해 연결합니다. 동기화할 때마다 아래 테스트를 변경 파일 주변만이 아니라 전부 실행해 통과시킵니다. 같은 목록이 `scripts/yc/upstream-sync/personal-tests.txt`에 있으므로, 기능을 추가하거나 테스트를 옮기면 두 곳을 함께 고칩니다. 자동 동기화의 Claude 리뷰는 아래 `###` 제목을 점검할 기능 목록으로 씁니다.
 
 ### 프로젝트 폴더 드래그 정렬 (Boring sidebar)
 
@@ -69,7 +96,7 @@
 
 - 동작: 서버의 제품 분석 이벤트(PostHog, `ingest.t3.codes`)를 `T3CODE_TELEMETRY_ENABLED` 값과 관계없이 보내지 않습니다. 호출부는 upstream 그대로 두고 주입하는 레이어만 no-op으로 바꿉니다. 빌드 때 OTLP나 PostHog 값이 번들에 들어가면 CI가 실패합니다.
 - 파일: `apps/server/src/telemetry/DisabledAnalytics.ts`, `server.ts`의 `DisabledAnalytics.layer` 연결, `yc.yml`의 "Keep telemetry out of the build" 단계
-- 동기화 확인: `git grep -n 'AnalyticsService.layer' -- apps/server/src ':!*.test.ts'` 결과가 비어 있어야 합니다. upstream이 `AnalyticsService`에 메서드를 추가하면 typecheck가 실패하므로 no-op에도 같은 메서드를 추가합니다. `telemetry/`나 `observability/`에 새 외부 전송 경로가 생겼는지도 확인합니다.
+- 동기화 확인: `scripts/yc/check-invariants.sh`가 CI와 동기화 검증에서 실제 `AnalyticsService.layer`가 다시 쓰이지 않는지, `server.ts`가 `DisabledAnalytics.layer`를 쓰는지 확인합니다. upstream이 `AnalyticsService`에 메서드를 추가하면 typecheck가 실패하므로 no-op에도 같은 메서드를 추가합니다. `telemetry/`나 `observability/`에 새 모듈이 생기면 자동 동기화가 리뷰로 넘어가므로, 새 외부 전송 경로인지 확인합니다.
 
 ## 커밋 메시지
 

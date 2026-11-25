@@ -1,0 +1,9 @@
+# Personal feature tests from PERSONAL.md. verify.sh runs them on every upstream sync, and a sync
+# that edits one of them waits for a human.
+apps/web/src/components/Sidebar.personal.browser.test.tsx
+apps/web/src/uiStateStore.test.ts
+apps/web/src/components/sidebar/projectFolderThreadLimit.test.ts
+apps/web/src/components/chat/ContextWindowRing.browser.test.tsx
+apps/web/src/lib/contextWindow.test.ts
+apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.test.ts
+apps/desktop/src/app/DesktopPreReadyPlatform.test.ts
