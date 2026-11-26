@@ -120,6 +120,9 @@ jobs:
           CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
           DISABLE_AUTOUPDATER: "1"
         run: |
+          # The runner reloads local composite actions for post steps. Keep their checkout on main.
+          git worktree add --detach "$RUNNER_TEMP/upstream-merge" HEAD
+          cd "$RUNNER_TEMP/upstream-merge"
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           scripts/yc/upstream-sync/resolve.sh "$TAG" "$TAG_SHA" "$RUNNER_TEMP/sync"
