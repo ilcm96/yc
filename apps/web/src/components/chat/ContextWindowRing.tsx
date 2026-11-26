@@ -1,6 +1,5 @@
 import type { ContextWindowSnapshot } from "@t3tools/client-runtime/state/context-window";
-import type { ServerProviderUsageWindow } from "@t3tools/contracts";
-import { collectProviderUsageLimits, remainingPercent } from "@t3tools/shared/usageLimits";
+import { remainingPercent } from "@t3tools/shared/usageLimits";
 import { formatDuration, formatResetsIn, limitsNotice } from "@t3tools/shared/usageLimitsCopy";
 import { useGT, useLocale, useMessages } from "gt-react";
 import { memo } from "react";
@@ -11,6 +10,11 @@ import { Button } from "../ui/button";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { composerFloatingLayerProps } from "./composerEventScope";
 import type { ThreadDetailsUsageInput } from "./ThreadDetailsUsage";
+import {
+  nextPoolReset,
+  resolveThreadDetailsLimits,
+  resolveThreadHttpQuotas,
+} from "./ThreadDetailsUsage.logic";
 import { OutputSpeedLabel } from "./OutputSpeedLabel";
 import type { DisplayedOutputSpeed } from "./outputSpeed.logic";
 
@@ -148,16 +152,14 @@ function ContextRingDetails({
         <div className="mt-1 flex flex-col gap-1.5">
           <span className="font-medium text-muted-foreground text-xs">{gt("Usage limits")}</span>
           {limitWindows.map((window) => {
-            const left = remainingPercent(window);
-            const resetsIn = formatResetsIn(window, now, m);
-            const value = gt("{left}% left", { left });
+            const value = gt("{left}% left", { left: window.left });
             return (
               <div key={window.id} className="flex flex-col gap-1">
                 <DetailRow
                   label={window.label}
-                  value={resetsIn === null ? value : `${value} · ${resetsIn}`}
+                  value={window.resetsIn === null ? value : `${value} · ${window.resetsIn}`}
                 />
-                <UsageBar percent={100 - left} label={window.label} thin />
+                <UsageBar percent={100 - window.left} label={window.label} thin />
               </div>
             );
           })}
@@ -236,19 +238,49 @@ function contextUsedPercent(usage: ContextWindowSnapshot) {
   return { percent, maxTokens };
 }
 
+interface RingLimitWindow {
+  readonly id: string;
+  readonly label: string;
+  readonly left: number;
+  readonly resetsIn: string | null;
+}
+
 /** The same windows Thread details shows for the selected provider instance. */
 function providerLimitWindows(
-  { providerInstanceId, providers, sources }: ContextRing["limits"],
+  { providerInstanceId, model, providers, sources }: ContextRing["limits"],
   now: number,
   m: ReturnType<typeof useMessages>,
-): readonly ServerProviderUsageWindow[] {
-  if (providerInstanceId === null) return [];
-  const report = collectProviderUsageLimits(providerInstanceId, providers, sources, now);
-  const limits =
-    report?.accounts.find((entry) => entry.instanceId === providerInstanceId)?.limits ??
-    providers.find((provider) => provider.instanceId === providerInstanceId)?.usageLimits;
-  if (!limits || limitsNotice(limits, m) !== null) return [];
-  return limits.windows;
+): readonly RingLimitWindow[] {
+  const resolved = resolveThreadDetailsLimits(providerInstanceId, model, providers, sources, now);
+  const quotas = resolveThreadHttpQuotas(providerInstanceId, sources);
+  const own: RingLimitWindow[] =
+    resolved?.kind === "pool"
+      ? resolved.windows.map((window) => {
+          const next = nextPoolReset(window, now);
+          return {
+            id: window.id,
+            label: window.label,
+            left: window.remainingPercent,
+            resetsIn: next ? formatDuration(next.at - now, m) : null,
+          };
+        })
+      : resolved && limitsNotice(resolved.limits, m) === null
+        ? resolved.limits.windows.map((window) => ({
+            id: window.id,
+            label: window.label,
+            left: remainingPercent(window),
+            resetsIn: formatResetsIn(window, now, m),
+          }))
+        : [];
+  return [
+    ...own,
+    ...quotas.map(({ key, window }) => ({
+      id: key,
+      label: window.label,
+      left: remainingPercent(window),
+      resetsIn: formatResetsIn(window, now, m),
+    })),
+  ];
 }
 
 function promptCacheLabel(

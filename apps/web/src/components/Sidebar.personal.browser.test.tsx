@@ -139,7 +139,7 @@ it("drags a project folder into a saved manual order", async () => {
 
 it("drags a project in the picker into a saved manual order", async () => {
   await using _app = await renderApp(false);
-  await page.getByLabelText("Filter threads by project").click();
+  await page.getByLabelText("Projects").click();
   const render = page.getByRole("option", { name: "render" });
   const beta = page.getByRole("option", { name: "beta" });
   await expect.element(render).toBeVisible();
