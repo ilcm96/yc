@@ -305,6 +305,7 @@ jobs:
 
       - name: Build
         env:
+          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
           T3CODE_DESKTOP_UPDATE_REPOSITORY: none
         run: >-
           node scripts/build-desktop-artifact.ts --platform mac --target zip --arch arm64
