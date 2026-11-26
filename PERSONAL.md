@@ -13,7 +13,7 @@
 
 ### 자동 동기화
 
-- `.github/workflows/yc-upstream-sync.yml`이 매일 04:00 KST에 새 stable 태그를 찾아 위 절차를 수행합니다. 수동 실행에서는 태그를 지정할 수 있고, `force`를 켜면 닫힌 PR이 있는 태그도 다시 동기화합니다. 스크립트는 `scripts/yc/upstream-sync/`에 있습니다.
+- `.github/workflows/yc-upstream-sync.yml`이 매일 04:17 KST에 새 stable 태그를 찾아 위 절차를 수행합니다. 수동 실행에서는 태그를 지정할 수 있고, `force`를 켜면 닫힌 PR이 있는 태그도 다시 동기화합니다. 스크립트는 `scripts/yc/upstream-sync/`에 있습니다.
   - Resolve: 태그를 merge하고 `verify.sh`(i18n, typecheck, `scripts/yc/check-invariants.sh`, `personal-tests.txt`의 개인 기능 테스트)로 검증합니다. 충돌이 있거나 검증이 실패할 때만 Claude 해결 세션(`resolve-prompt.md`, 70분)을 한 번 실행하고, Git 기본 메시지로 merge commit을 만듭니다.
   - Review: 모든 동기화에서 Claude 리뷰 세션(`review-prompt.md`, 40분)이 동기화 전후의 yc 패치와 겹치는 파일의 upstream 변경을 읽고, PERSONAL.md의 개인 기능마다 진입점부터 연결이 살아 있는지 점검합니다. 테스트는 컴포넌트를 단독으로 검사하므로, upstream이 기능을 닿을 수 없게 만든 경우를 이 단계가 잡습니다.
   - 두 세션 모두 `--model opus`로 최신 Opus를 쓰고, 서브에이전트(Agent)를 허용해 병렬로 조사합니다. 단계·모델별 토큰 수와 API 정가로 환산한 비용은 PR 본문과 Actions 실행 요약에 남깁니다.
