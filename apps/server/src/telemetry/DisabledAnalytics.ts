@@ -5,11 +5,13 @@ import * as Layer from "effect/Layer";
 import * as AnalyticsService from "./AnalyticsService.ts";
 
 const ignore = () => Effect.void;
+// Nothing is queued, as when telemetry is off.
+const drop = () => Effect.succeed(false);
 
 export const layer = Layer.succeed(
   AnalyticsService.AnalyticsService,
   AnalyticsService.AnalyticsService.of({
-    record: ignore,
+    record: drop,
     flush: Effect.void,
     recordOwners: ignore,
   }),
