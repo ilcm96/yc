@@ -126,4 +126,7 @@ it("shows Boring sidebar device preferences read-only while a project is selecte
   for (const name of ["Boring sidebar (group by project)", "Two-line folder rows"]) {
     expect(screen.getByRole("switch", { name }).element().closest("[inert]")).not.toBeNull();
   }
+  expect(
+    screen.getByRole("combobox", { name: "Threads per folder" }).element().closest("[inert]"),
+  ).not.toBeNull();
 });

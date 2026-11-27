@@ -18,6 +18,7 @@ export function BoringSidebarFolderThreadLimitRow() {
   return (
     <SettingsRow
       {...setting}
+      devicePreference
       className="px-0 py-2 sm:px-0"
       description={gt(
         "Show this many threads in each open folder, and this many more with each Show more.",
