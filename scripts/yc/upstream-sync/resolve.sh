@@ -35,8 +35,9 @@ worktree_tree() {
   rm -f "$index"
 }
 
+# Rebranding first renames the "T3 Code" labels the new tag brought in (PERSONAL.md, YC 브랜딩).
 verify() {
-  (vp install && "$here/verify.sh") 2>&1 | tee "$work/verify-$1.log"
+  (vp install && node scripts/yc/rebrand.ts && "$here/verify.sh") 2>&1 | tee "$work/verify-$1.log"
 }
 
 # One headless Claude session reading $work/<name>-prompt.md; fails on an error or a timeout.

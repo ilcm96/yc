@@ -7,10 +7,12 @@ yc(T3 Code 개인 빌드) 저장소에서 upstream stable 태그를 `bot/upstrea
 ## 할 일
 
 1. 충돌을 모두 해결합니다. upstream의 새 구조를 유지하고, `PERSONAL.md`의 "유지할 개인 기능"을 그 위에 다시 연결합니다. 한쪽을 통째로 고르지 않습니다.
-2. `apps/web/src/i18n/translations` 충돌은 upstream 카탈로그를 받고(`git checkout --theirs`), `apps/web`에서 `vp run i18n:generate`를 실행한 뒤, 영어로 돌아온 개인 키를 다시 번역합니다.
-3. `pnpm-lock.yaml` 충돌은 upstream 쪽을 받은 뒤 `vp install`로 맞춥니다. 의존성이 바뀌었으면 `vp install`을 실행합니다.
-4. `scripts/yc/upstream-sync/verify.sh`가 통과할 때까지 고칩니다. 이 스크립트는 i18n, 타입, yc 불변식, 개인 기능 테스트를 확인합니다.
-5. 마지막에 보고 파일을 씁니다.
+2. "T3 Code"를 "YC"로 바꾼 줄만 충돌했다면 upstream 쪽을 받습니다. 충돌을 모두 해결한 뒤 저장소 루트에서 `node scripts/yc/rebrand.ts`를 실행하면, 새로 들어온 문구까지 다시 YC로 바꾸고 번역을 새 키로 옮깁니다.
+3. `i18n/translations` 충돌은 upstream 카탈로그를 받고(`git checkout --theirs`), `node scripts/yc/rebrand.ts`와 각 앱의 `vp run i18n:generate`를 실행한 뒤, 영어로 돌아온 개인 키를 다시 번역합니다.
+4. `apps/server/src/provider/agentContextBudget.json`은 충돌하거나 `AgentContextBudget.test.ts`가 실패하면 테스트가 보여 주는 측정값으로 바꿉니다. yc는 이름이 짧아 upstream보다 값이 작습니다.
+5. `pnpm-lock.yaml` 충돌은 upstream 쪽을 받은 뒤 `vp install`로 맞춥니다. 의존성이 바뀌었으면 `vp install`을 실행합니다.
+6. `scripts/yc/upstream-sync/verify.sh`가 통과할 때까지 고칩니다. 이 스크립트는 i18n, 타입, yc 불변식, 개인 기능 테스트를 확인합니다.
+7. 마지막에 보고 파일을 씁니다.
 
 충돌 파일이 여러 개면 서브에이전트로 나눠 병렬로 조사해도 됩니다. 전체 시간 제한은 70분입니다.
 

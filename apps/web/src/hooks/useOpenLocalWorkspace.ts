@@ -72,9 +72,7 @@ export function useOpenLocalWorkspace() {
         });
         if (result._tag === "Failure") {
           const error = squashAtomCommandFailure(result);
-          throw error instanceof Error
-            ? error
-            : new Error(m(msg("T3 Code could not add the project.")));
+          throw error instanceof Error ? error : new Error(m(msg("YC could not add the project.")));
         }
         return projectId;
       },

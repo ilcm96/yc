@@ -84,13 +84,14 @@
 
 ### YC 브랜딩
 
-- 동작: 배포판의 앱 이름, 메뉴, 창 제목, 웹 탭 제목, macOS 권한 요청 문구, 사이드바 로고, 아이콘을 YC로 표시합니다. 설정 설명처럼 화면 곳곳에 직접 적힌 "T3 Code" 문구는 동기화 충돌을 줄이기 위해 그대로 둡니다.
-- 파일: `assets/yc/`(아이콘과 원본 SVG), `scripts/lib/brand-assets.ts`의 production mac·web 아이콘 경로, `apps/desktop/package.json`의 `productName`, `DesktopEnvironment.ts`의 `APP_BASE_NAME`과 Beta 표기 생략, `scripts/build-desktop-artifact.ts`의 `artifactName`·`NS*UsageDescription`·mac `protocols` 이름, `apps/desktop/scripts/electron-launcher.mjs`, `apps/web/src/branding.ts`·`branding.logic.ts`, `vite.config.ts`, `index.html`, `manifest.webmanifest`, `T3Wordmark.tsx`(Stack Sans Notch로 쓴 YC 워드마크로 교체), `SidebarChrome.tsx`·`ui/standalone-page.tsx`의 "Code" 글자 제거
-- 아이콘: 검은 타일 아래쪽에 인디고·마젠타·시안 빛이 번지는 배경(Aurora) 위에 Stack Sans Notch 700의 Y를 얹습니다. 사이드바 워드마크는 같은 글꼴의 "YC"입니다. 원본은 `assets/yc/yc-icon.svg`(앱 아이콘)와 `yc-mark.svg`(워드마크)이고, 글자 윤곽은 Google Fonts의 Stack Sans Notch(OFL)에서 뽑아 경로로 넣었으므로 글꼴 파일은 저장소에 없습니다. PNG와 ICO는 `yc-icon.svg`를 macOS(1024, 824px 타일과 그림자), web(512·192·32·16, 4% 여백), apple-touch(180, 여백 없음) 크기로 렌더링해 만듭니다. 모서리가 각진 apple-touch 아이콘은 iOS 홈 화면(`index.html`의 `apple-touch-icon` 링크)에만 씁니다. 웹·데스크톱 로딩 화면(`#boot-shell-logo`)과 PWA manifest에는 둥근 `icon-192x192.png` 이상을 씁니다.
-- 테스트: `DesktopPreReadyPlatform.test.ts`의 desktop entry 이름
-- 고지: `README.md` 맨 위의 비공식 빌드 안내
+- 동작: 배포판의 앱 이름, 메뉴, 창 제목, 웹 탭 제목, macOS 권한 요청 문구, 사이드바 로고, 아이콘, 화면·CLI·오류·MCP 도구 설명에 나오는 제품 이름을 YC로 표시합니다. upstream `TRADEMARK.md`가 포크에 자체 브랜딩을 요구하므로 T3 이름, 로고, 아이콘을 쓰지 않습니다. 실제 서비스 이름인 T3 Connect와 T3 Chat, 그리고 "AGENTS.md와 다르게 적용하는 규칙"의 내부 식별자는 그대로 둡니다.
+- 문구: `scripts/yc/rebrand.ts`가 server·web·desktop·packages의 소스와 `scripts/build-desktop-artifact.ts`에서 "T3 Code"를 "YC"로 바꾸고, web·desktop·mobile 카탈로그를 다시 생성한 뒤 기존 번역을 새 키로 옮깁니다. GT 키가 영어 원문의 hash라서 문구가 바뀌면 키도 바뀌기 때문입니다. 같은 이름을 데이터로 쓰는 줄(예전 프로필 이름 `T3 Code (Alpha)`·`(Dev)`, 설치 경로, CLI shim 표식, 연결 라벨 접두어 `T3 Code · `, Codex client 이름과 originator, MCP 서버 이름, 체크포인트 커밋 작성자)은 `KEEP_LINE`이, 이름을 샘플로 쓰는 테스트와 upstream `.github/triage/PLAYBOOK.md`를 그대로 옮긴 triage 프롬프트는 `SKIP_FILES`가 건너뜁니다. 동기화는 `resolve.sh`의 검증 전에 이 스크립트를 실행하고, `check-invariants.sh`가 `--check`로 남은 문구를 잡습니다. upstream이 새로 들여온 "T3 Code"가 파일 이름, 표식, 비교값처럼 데이터로 쓰이면 `KEEP_LINE`에 추가해야 하므로 리뷰에서 확인합니다.
+- 파일: `assets/prod/`(파일 이름은 upstream 그대로, 내용만 YC 그림), `assets/yc/`(원본 SVG), `apps/desktop/package.json`의 `productName`, `DesktopEnvironment.ts`의 `APP_BASE_NAME`과 Beta 표기 생략, `scripts/build-desktop-artifact.ts`의 `artifactName`·`NS*UsageDescription`·mac `protocols` 이름, `apps/desktop/scripts/electron-launcher.mjs`, `apps/web/src/branding.ts`·`branding.logic.ts`, `vite.config.ts`, `index.html`, `manifest.webmanifest`, `T3Wordmark.tsx`(Stack Sans Notch로 쓴 YC 워드마크로 교체), `T3AppIcon.tsx`(둥근 아이콘), `SidebarChrome.tsx`·`ui/standalone-page.tsx`의 "Code" 글자 제거. `T3Wordmark`·`T3AppIcon`처럼 이름에 T3가 들어간 컴포넌트는 충돌을 줄이려고 이름을 바꾸지 않습니다.
+- 아이콘: 검은 타일 아래쪽에 인디고·마젠타·시안 빛이 번지는 배경(Aurora) 위에 Stack Sans Notch 700의 Y를 얹습니다. 사이드바 워드마크는 같은 글꼴의 "YC"입니다. 원본은 `assets/yc/yc-icon.svg`(앱 아이콘)와 `yc-mark.svg`(워드마크)이고, 글자 윤곽은 Google Fonts의 Stack Sans Notch(OFL)에서 뽑아 경로로 넣었으므로 글꼴 파일은 저장소에 없습니다. `assets/prod`의 PNG와 ICO는 `yc-icon.svg`를 렌더링해 만듭니다. macOS(`black-macos-1024.png`, 824px 타일과 그림자), web(512·192·32·16, 4% 여백), Linux(`black-universal-1024.png`)와 Windows ICO(16\~256)는 둥근 타일이고, apple-touch(180)와 iOS(`black-ios-1024.png`)만 여백 없는 각진 타일입니다. 모서리가 각진 아이콘은 iOS 홈 화면(`index.html`의 `apple-touch-icon` 링크)에만 씁니다. 웹·데스크톱 로딩 화면(`#boot-shell-logo`), PWA manifest, `T3AppIcon`에는 둥근 `icon-192x192.png` 이상을 씁니다. `app-icon.icon`(Icon Composer)과 `logo.svg`도 T3 글자 대신 Y를 씁니다.
+- 테스트: `DesktopPreReadyPlatform.test.ts`의 desktop entry 이름, `AgentContextBudget.test.ts`(에이전트 지시문과 MCP 도구 설명의 바이트 수). 이름이 짧아져 upstream과 값이 다르므로, 동기화 때마다 `agentContextBudget.json`을 측정값으로 맞춥니다. 모델이 읽는 문구는 이름만 바꾸므로 `evals/`는 다시 돌리지 않습니다.
+- 고지: `README.md`는 짧은 YC 소개와 비공식 빌드 고지로 대체합니다. 동기화에서 README 충돌은 yc 쪽을 유지합니다.
 - staged `package.json`에 최상위 `productName`을 넣지 않습니다. Electron이 `name`(`t3code`) 대신 그 값을 써서 Keychain 항목 "t3code Safe Storage"가 바뀌기 때문입니다.
-- `scripts/export-brand-icons.ts`를 실행하면 `assets/yc/yc-macos-1024.png`를 upstream Icon Composer 결과로 덮어쓰므로 실행하지 않습니다.
+- `scripts/export-brand-icons.ts`를 실행하면 `assets/prod`의 PNG를 Icon Composer 결과로 덮어써 Aurora 배경이 사라지므로 실행하지 않습니다.
 
 ### 출력 속도 (tok/s)
 
@@ -119,4 +120,4 @@
 - 개인 기능은 web과 desktop만 대상으로 합니다. mobile, marketing, 다른 provider의 네이티브 UI는 범위 밖입니다.
 - 가능하면 기존 번역 문구를 재사용합니다. 동기화 중 `apps/web/src/i18n/translations`에서 충돌이 나면 upstream 카탈로그를 받고, `apps/web`에서 `vp run i18n:generate`를 실행한 뒤, 영어로 돌아온 개인 키를 다시 번역합니다.
 - 동기화 자동화는 sync PR을 만들고 병합할 수 있습니다. PR 증빙 업로드나 기여 정책처럼 upstream 전용 절차는 적용하지 않습니다.
-- 기존 데이터와 T3 Connect에 연결된 내부 식별자는 유지합니다: bundle id `com.t3tools.t3code`, staged package 이름 `t3code`, `t3code://` scheme, `t3code-v2` 프로필, `~/.t3`. 사용자에게 보이는 브랜딩에는 T3 Code라고 쓰지 않습니다.
+- 기존 데이터와 T3 Connect에 연결된 내부 식별자는 유지합니다: bundle id `com.t3tools.t3code`, staged package 이름 `t3code`, `t3code://` scheme, `t3code-v2` 프로필, `~/.t3`, `@t3tools/*` 패키지, `T3CODE_*` 환경 변수, `t3` CLI, MCP `t3_*` 도구 이름. 사용자에게 보이는 브랜딩에는 T3 Code라고 쓰지 않습니다.

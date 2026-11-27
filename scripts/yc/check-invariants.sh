@@ -13,4 +13,8 @@ if ! git grep -q 'DisabledAnalytics.layer' -- apps/server/src/server.ts; then
   echo "::error::server.ts no longer provides DisabledAnalytics.layer"
   status=1
 fi
+if ! node scripts/yc/rebrand.ts --check; then
+  echo '::error::A user-facing "T3 Code" label is back; run node scripts/yc/rebrand.ts'
+  status=1
+fi
 exit "$status"
