@@ -19,8 +19,10 @@ const SCOPE = [
   "packages/*/src/*",
   "scripts/build-desktop-artifact.ts",
   "scripts/build-desktop-artifact.test.ts",
+  // These run in CI and assert on the agent instructions the server builds.
+  "evals/mcp-tool-use/*.test.ts",
 ];
-const SKIP_FILE = /(\.ndjson$|\/i18n\/translations\/|\/_generated\/)/;
+const SKIP_FILE = /(\/i18n\/translations\/|\/_generated\/)/;
 // Files that use the name as sample text (a search query, a speech hint, an agent's tool label).
 const SKIP_FILES = new Set([
   "packages/shared/src/paletteSearch.test.ts",
@@ -32,18 +34,22 @@ const SKIP_FILES = new Set([
   "apps/server/src/triage/triagePrompt.test.ts",
 ]);
 
-// Lines that use the name as data rather than as a label. Changing them breaks existing installs,
-// other environments, provider sessions, or tests whose fixtures depend on the exact text.
-const KEEP_LINE = [
-  /T3 Code \((Alpha|Dev)\)|T3 Code \\\(/, // legacy profile and dev-build names on disk
-  /[/\\]T3 Code|T3 Code[/\\]|T3 Code( \(\w+\))?\.(app|exe)\b/, // install paths, often to test quoting
-  /Written by T3 Code/, // marker that identifies an installed CLI shim
-  /T3 Code · (?!v\{)/, // linked-environment label prefix that other environments parse
-  /CODEX_CLIENT_NAME = "T3 Code"|clientInfo: \{ name: "T3 Code"|userAgent: "T3 Code\/|\(T3 Code; /, // Codex client identity
-  /GIT_(AUTHOR|COMMITTER)_NAME: "T3 Code"/, // checkpoint commit identity
-  /originator\W+"T3 Code"/i, // Codex originator, the same client identity
-  /^\s*name: "T3 Code",\s*$/, // MCP server name; agents prefix tool labels with it
-  /T3 Code page/, // the ACP mock agent's canned web page
+// Spans that use the name as data rather than as a label, in source and in recorded provider
+// frames (*.ndjson). Changing them breaks existing installs, other environments, provider sessions,
+// or tests whose fixtures depend on the exact text.
+const KEEP = [
+  /T3 Code \((Alpha|Dev)\)|T3 Code \\\(/g, // legacy profile and dev-build names on disk
+  /(?:\/|\\)T3 Code|T3 Code(?:\/|\\\\)|T3 Code( \(\w+\))?\.(app|exe)\b/g, // install paths, often to test quoting
+  /Written by T3 Code/g, // marker that identifies an installed CLI shim
+  /T3 Code · (?!v\{)/g, // linked-environment label prefix that other environments parse
+  // Client identity sent to providers: Codex's name, title, user agent and originator, and the
+  // titles Muse and Antigravity receive.
+  /CODEX_CLIENT_NAME = "T3 Code"|clientInfo: \{ name: "T3 Code", title: "T3 Code"|"clientInfo":\{"name":"T3 Code","title":"T3 Code"|\(T3 Code; /g,
+  /name: "t3[-_]code", title: "T3 Code"|"name":"t3[-_]code","title":"T3 Code"/g,
+  /originator\W+"T3 Code"/gi,
+  /GIT_(AUTHOR|COMMITTER)_NAME: "T3 Code"|T3 Code Test/g, // checkpoint and test commit identities
+  /^\s*name: "T3 Code",\s*$/g, // MCP server name; agents prefix tool labels with it
+  /T3 Code page/g, // the ACP mock agent's canned web page
 ];
 
 // The gt CLI runs through Node because the `.bin/gt` shim is a shell script Windows cannot spawn.
@@ -60,8 +66,16 @@ type Catalog = Record<string, Json>;
 const root = NodePath.resolve(import.meta.dirname, "../..");
 const check = process.argv.includes("--check");
 
-const kept = (text: string) => KEEP_LINE.some((keep) => keep.test(text));
-const rebrandLine = (line: string) => (kept(line) ? line : line.replace(FROM, TO));
+const keptSpans = (text: string) =>
+  KEEP.flatMap((keep) =>
+    [...text.matchAll(keep)].map((match) => [match.index, match.index + match[0].length]),
+  );
+const rebrandLine = (line: string) => {
+  const spans = keptSpans(line);
+  return line.replace(FROM, (match: string, _space: string, offset: number) =>
+    spans.some(([start, end]) => offset >= start! && offset < end!) ? match : TO,
+  );
+};
 const rebrandValue = (value: Json): Json =>
   typeof value === "string"
     ? value.replace(FROM, TO)
@@ -135,7 +149,7 @@ for (const file of sourceFiles) {
 const staleCatalogs = APPS.filter((app) => app.clean).flatMap((app) =>
   Object.values(catalogsOf(app).read().en)
     .map((text) => JSON.stringify(text))
-    .filter((text) => HAS.test(text) && !kept(text))
+    .filter((text) => HAS.test(text) && rebrandLine(text) !== text)
     .map((text) => `${app.dir} en.json: ${text}`),
 );
 
