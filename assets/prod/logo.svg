@@ -1,4 +1,11 @@
-<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M0 10C0 4.47715 4.47715 0 10 0H118C123.523 0 128 4.47715 128 10V118C128 123.523 123.523 128 118 128H10C4.47715 128 0 123.523 0 118V10Z" fill="black"/>
-<path d="M33.4509 93V47.56H15.5309V37H64.3309V47.56H46.4109V93H33.4509ZM86.7253 93.96C82.832 93.96 78.9653 93.4533 75.1253 92.44C71.2853 91.3733 68.032 89.88 65.3653 87.96L70.4053 78.04C72.5386 79.5867 75.0186 80.8133 77.8453 81.72C80.672 82.6267 83.5253 83.08 86.4053 83.08C89.6586 83.08 92.2186 82.44 94.0853 81.16C95.952 79.88 96.8853 78.12 96.8853 75.88C96.8853 73.7467 96.0586 72.0667 94.4053 70.84C92.752 69.6133 90.0853 69 86.4053 69H80.4853V60.44L96.0853 42.76L97.5253 47.4H68.1653V37H107.365V45.4L91.8453 63.08L85.2853 59.32H89.0453C95.9253 59.32 101.125 60.8667 104.645 63.96C108.165 67.0533 109.925 71.0267 109.925 75.88C109.925 79.0267 109.099 81.9867 107.445 84.76C105.792 87.48 103.259 89.6933 99.8453 91.4C96.432 93.1067 92.0586 93.96 86.7253 93.96Z" fill="white"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><defs>
+<clipPath id="tile"><rect x="8" y="8" width="84" height="84" rx="18.859223300970875"/></clipPath>
+<linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<filter id="aurora" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+<filter id="lift" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.2" flood-color="#000" flood-opacity=".45"/></filter>
+<filter id="drop" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.4" flood-color="#000" flood-opacity=".3"/></filter>
+</defs><g transform="translate(21.524 21.524) scale(9.80952)"><g filter="url(#drop)"><rect x="8" y="8" width="84" height="84" rx="18.859223300970875" fill="#060608"/></g>
+<g clip-path="url(#tile)"><g filter="url(#aurora)"><circle cx="26" cy="92" r="30" fill="#4f46e5"/><circle cx="72" cy="88" r="26" fill="#c026d3" fill-opacity=".85"/><circle cx="54" cy="104" r="20" fill="#06b6d4"/></g></g>
+<rect x="8" y="8" width="84" height="84" rx="18.859223300970875" fill="url(#sheen)"/>
+<rect x="8.4" y="8.4" width="83.2" height="83.2" rx="18.459223300970876" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width=".8"/>
+<g fill="#fff" filter="url(#lift)"><path transform="translate(31.190 71) scale(0.06000 -0.06000)" d="M260 192 20 700H168L333 339H295L459 700H607L367 192ZM241 349H386V0H241Z"/></g></g></svg>
